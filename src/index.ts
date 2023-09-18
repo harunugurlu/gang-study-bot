@@ -6,7 +6,7 @@ import { config } from './config/config';
 const { DISCORD_CLIENT_ID, DISCORD_TOKEN } = config;
 
 const client = new Client({
-    intents: ["Guilds", "GuildMessages", "DirectMessages", "GuildEmojisAndStickers", "GuildVoiceStates"]
+    intents: ["Guilds", "GuildMessages", "GuildEmojisAndStickers", "GuildVoiceStates", "GuildPresences"]
 });
 
 client.once("ready", () => {
