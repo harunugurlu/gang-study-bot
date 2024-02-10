@@ -1,7 +1,7 @@
 import { ChannelType, CommandInteraction, InternalDiscordGatewayAdapterCreator, SlashCommandBuilder, VoiceChannel } from "discord.js";
 import { AudioPlayerStatus, VoiceConnection, createAudioPlayer, createAudioResource, getVoiceConnections, joinVoiceChannel } from "@discordjs/voice";
 import ytdl from "ytdl-core";
-import { Context } from "../constants";
+import { Context, LOFI_GIRL_STREAM_URL } from "../constants";
 
 export const requireVoiceChannel = true;
 
@@ -11,25 +11,44 @@ export const data = new SlashCommandBuilder()
     .addChannelOption((option) =>
         option
             .setName("channel")
-            .setDescription("The channel to play the lofi stream in")
-            .setRequired(true).addChannelTypes(ChannelType.GuildVoice));
+            .setDescription("The channel to play the lofi stream in defaults to lofi girl stream")
+            .setRequired(true).addChannelTypes(ChannelType.GuildVoice))
+    .addStringOption((option) =>
+        option
+            .setName("url")
+            .setDescription("The url of the lofi stream to play")
+            .setRequired(false))
 
 let retryCount = 0; // Keep track of retries at the global scope
 
-async function playStream(connection: VoiceConnection) {
+async function playStream(connection: VoiceConnection, streamUrl: string | null) {
 
     const player = createAudioPlayer();
     connection.subscribe(player);
 
-    const stream = ytdl("https://www.youtube.com/watch?v=jfKfPfyJRdk&ab_channel=LofiGirl",
-        {
-            highWaterMark: 1 << 25,
-            quality: [91, 92, 93, 94, 95],
-            liveBuffer: 4900
-        })
+    let ytdlOptions : ytdl.downloadOptions | undefined = {
+        highWaterMark: 1 << 25,
+        quality: [91, 92, 93, 94, 95],
+        liveBuffer: 4900
+    }
+
+    if(!streamUrl) {
+        streamUrl = LOFI_GIRL_STREAM_URL
+    }
+
+    const urlInfo = await ytdl.getBasicInfo(streamUrl);
+
+    if(!urlInfo.formats[0].isLive) {
+        ytdlOptions = {
+            quality: 'highestaudio',
+        }
+    }
+
+
+    const stream = ytdl(streamUrl, ytdlOptions)
 
     var resource = createAudioResource(stream);
-    
+
     player.play(resource);
 
     player.on(AudioPlayerStatus.Buffering, () => {
@@ -70,8 +89,11 @@ export async function execute(context: Context) {
         return context.interaction.reply("Connection not found.");
     }
 
+    // Join the voice channel
     const voiceConnection = joinVoiceChannel(context.connection);
-    playStream(voiceConnection);
+
+    // Play the stream
+    playStream(voiceConnection, context.connection.streamUrl);
 
     voiceConnection.on('error', (error) => {
         console.error(`An error occured in voiceConnection: ${error}`);

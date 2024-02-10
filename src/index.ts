@@ -47,6 +47,7 @@ client.on("interactionCreate", async (interaction) => {
             channelId: voiceChannel.id,
             guildId: interaction.guild.id,
             adapterCreator: interaction.guild.voiceAdapterCreator,
+            streamUrl: interaction.options.getString("url")
         };
 
         const context = {
