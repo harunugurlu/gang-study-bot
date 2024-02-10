@@ -1,6 +1,9 @@
 import { ChannelType, CommandInteraction, InternalDiscordGatewayAdapterCreator, SlashCommandBuilder, VoiceChannel } from "discord.js";
 import { AudioPlayerStatus, VoiceConnection, createAudioPlayer, createAudioResource, getVoiceConnections, joinVoiceChannel } from "@discordjs/voice";
 import ytdl from "ytdl-core";
+import { Context } from "../constants";
+
+export const requireVoiceChannel = true;
 
 export const data = new SlashCommandBuilder()
     .setName("lofi")
@@ -10,12 +13,6 @@ export const data = new SlashCommandBuilder()
             .setName("channel")
             .setDescription("The channel to play the lofi stream in")
             .setRequired(true).addChannelTypes(ChannelType.GuildVoice));
-
-interface VoiceChannelConnection {
-    channelId: string;
-    guildId: string;
-    adapterCreator: InternalDiscordGatewayAdapterCreator;
-}
 
 let retryCount = 0; // Keep track of retries at the global scope
 
@@ -32,11 +29,7 @@ async function playStream(connection: VoiceConnection) {
         })
 
     var resource = createAudioResource(stream);
-
-    // stream.on('data', (chunk) => {
-    //     console.log(`Received ${chunk.length} bytes of data.`);
-    // })
-
+    
     player.play(resource);
 
     player.on(AudioPlayerStatus.Buffering, () => {
@@ -71,7 +64,11 @@ async function playStream(connection: VoiceConnection) {
     });
 }
 
-export async function execute(context: { interaction: CommandInteraction, connection: VoiceChannelConnection }) {
+export async function execute(context: Context) {
+
+    if (!context.connection) {
+        return context.interaction.reply("Connection not found.");
+    }
 
     const voiceConnection = joinVoiceChannel(context.connection);
     playStream(voiceConnection);
