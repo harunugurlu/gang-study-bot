@@ -1,4 +1,4 @@
-import { ChannelType, Client, VoiceChannel } from 'discord.js';
+import { ChannelType, Client, CommandInteraction, InternalDiscordGatewayAdapterCreator, VoiceChannel } from 'discord.js';
 import { deployCommands } from './deploy-commands';
 import { commands } from './commands';
 import { config } from './config/config';
@@ -33,27 +33,39 @@ client.on("interactionCreate", async (interaction) => {
         return;
     }
 
-    const voiceChannel = interaction.options.getChannel("channel");
-    
-    // Check if the voiceChannel exists and is a valid voice channel
-    if (!voiceChannel || voiceChannel.type !== ChannelType.GuildVoice) {
-        interaction.reply("Please specify a valid voice channel.");
-        return;
-    }
+    const command = commands[commandName as keyof typeof commands];
 
-    const connection = {
-        channelId: voiceChannel.id,
-        guildId: interaction.guild.id,
-        adapterCreator: interaction.guild.voiceAdapterCreator
-    };
+    if(command.requireVoiceChannel) {
+        const voiceChannel = interaction.options.getChannel("channel");
 
-    const context = {
-        interaction: interaction,
-        connection: connection
-    };
-    //This checks if there's a command within the commands object that matches the invoked command name.
-    if (commands[commandName as keyof typeof commands]) {
-        commands[commandName as keyof typeof commands].execute(context);
+        if (!voiceChannel || voiceChannel.type !== ChannelType.GuildVoice) {
+            interaction.reply("Please specify a valid voice channel.");
+            return;
+        }
+
+        const connection = {
+            channelId: voiceChannel.id,
+            guildId: interaction.guild.id,
+            adapterCreator: interaction.guild.voiceAdapterCreator,
+        };
+
+        const context = {
+            interaction: interaction,
+            connection: connection,
+        };
+
+        if(command) {
+            command.execute(context);
+        }
+    } else {
+        const context = {
+            interaction: interaction,
+            connection: null,
+        };
+
+        if(command) {
+            command.execute(context);
+        }
     }
 });
 
