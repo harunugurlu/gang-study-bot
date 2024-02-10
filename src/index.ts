@@ -1,4 +1,4 @@
-import { ChannelType, Client } from 'discord.js';
+import { ChannelType, Client, VoiceChannel } from 'discord.js';
 import { deployCommands } from './deploy-commands';
 import { commands } from './commands';
 import { config } from './config/config';
@@ -14,6 +14,7 @@ client.once("ready", () => {
 });
 
 client.on("guildCreate", async (guild) => {
+    console.log(`Joined a new guild: ${guild.name}`)
     await deployCommands({ guildId: guild.id });
 });
 
@@ -23,6 +24,8 @@ client.on("interactionCreate", async (interaction) => {
     }
 
     const { commandName } = interaction;
+
+    console.log(`Received command: ${commandName}`)
 
     // Check if the interaction occurred within a guild.
     if (!interaction.guild) {
