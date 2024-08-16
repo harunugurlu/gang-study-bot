@@ -44,7 +44,6 @@ async function playStream(connection: VoiceConnection, streamUrl: string | null)
         }
     }
 
-
     const stream = ytdl(streamUrl, ytdlOptions)
 
     var resource = createAudioResource(stream);
